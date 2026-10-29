@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt6-base-dev ninja-build
+      - name: Install Qt (Windows)
+        if: runner.os == 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          arch: 'win64_msvc2022_64'
+      - name: Install Qt (macOS)
+        if: runner.os == 'macOS'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: 'mac'
+          target: 'desktop'
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel
